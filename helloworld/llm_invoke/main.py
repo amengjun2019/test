@@ -75,6 +75,51 @@ def llm_invoke(modeltype,modelname,usermsg):
         return response.choices[0].message.content
     except:
         return '服务器无响应，请稍后再试！'
+    
+import requests
+
+def stream_llm_response(modeltype,modelname,usermsg):
+    try:
+        client=OpenAI(api_key=os.getenv(model_dict.get(modeltype)+'_APIKEY'),base_url=urls_dict.get(modeltype))
+        response = client.chat.completions.create(
+            model=modelname,
+            # prompt='who are you?',
+            max_tokens=200,
+            messages=usermsg,
+            stream=True
+        )
+        for chunk in response:
+            # if "choices" in chunk:
+            if chunk.choices[0].delta.content:
+                print(chunk.choices[0].delta.content)
+                yield chunk.choices[0].delta.content
+        # for chunk in response.iter_content(chunk_size=None):
+        #     if chunk:
+        #         res=chunk.decode("utf-8")
+        #         yield res
+    except Exception as e:
+        return '服务器无响应，请稍后再试！'
+
+
+
+
+    # # 调用LLM服务（以OpenAI API为例）
+    # api_url =urls_dict.get(modeltype)
+    # headers = {
+    #     "Authorization": os.getenv(model_dict.get(modeltype)+'_APIKEY'),
+    #     "Content-Type": "application/json",
+    # }
+    # data = {
+    #     "model":modelname,  # 或其他模型
+    #     "prompt": prompt,
+    #     "max_tokens": 100,
+    #     "stream": True,  # 启用流式返回
+    # }
+
+    # # 发送请求并流式读取响应
+    # response = requests.post(api_url, headers=headers, json=data, stream=True)
+
+
 
 if __name__=='__main__':
     msg=[

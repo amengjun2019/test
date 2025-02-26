@@ -13,6 +13,8 @@ from django.middleware.csrf import get_token
 from custommodel.models import Message,CustomUser,LoginRecord
 import pytz 
 import datetime
+
+from django.http import StreamingHttpResponse
     
 
 def login(request):
@@ -31,13 +33,12 @@ def login(request):
                 if code==user_login.verify_code:
                     # 如果首次登录 添加新用户
                     if not CustomUser.objects.filter(phone_number=tel).exists():
-                        CustomUser.objects.create(phone_number=tel,username='游客')
+                        CustomUser.objects.create(phone_number=tel)
                     user=CustomUser.objects.get(phone_number=tel)
                     data={
                         'flag':1,
                         'user':{
-                            'tel':user.phone_number,
-                            'name':user.username
+                            'tel':user.phone_number
                         },
                         'csrf_token':get_token(request)
                     }
@@ -45,7 +46,7 @@ def login(request):
                     return JsonResponse(data)
             return JsonResponse({'flag':0,'msg':'验证码输入错误！'})
 
-        except:
+        except Exception as e:
             return JsonResponse({'flag':0,'msg':'您还未获取登录验证码！'})
 
     
@@ -100,25 +101,24 @@ def get_code(request):
             random.shuffle(digits)
             verify_code = ''.join(str(digit) for digit in digits[:4])
 
-            alisendcode.Sample.main([
-        tel,'阿里云短信测试','SMS_154950909','{"code":'+verify_code+'}'
-    ])
-        print(verify_code)
+    #         alisendcode.Sample.main([
+    #     tel,'阿里云短信测试','SMS_154950909','{"code":'+verify_code+'}'
+    # ])
+            print(verify_code)
 
         # 检查是否存在符合条件的记录
         # if LoginRecord.objects.filter(phone_number=tel).exists():
         #     print("记录存在")
         # else:
-        LoginRecord.objects.create(phone_number=tel,verify_code=verify_code)
+            LoginRecord.objects.create(phone_number=tel,verify_code=verify_code)
 
-        now  =datetime.datetime.now()
-        data={
-                'code':verify_code,
-                'sendtime':now.strftime("%Y-%m-%d %H:%M:%S")
-        }
-        return JsonResponse(data)
+            now  =datetime.datetime.now()
+            data={
+                    'code':verify_code,
+                    'sendtime':now.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            return JsonResponse(data)
     
-# @csrf_exempt  
 def query(request):
     if request.method=='POST':
          try:
@@ -169,3 +169,21 @@ def query(request):
          except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@csrf_exempt 
+def llm_stream_view(request):
+    # 获取用户输入的提示词
+    # prompt = request.GET.get("prompt", "Hello, how are you?")
+    if request.method=='POST':
+         try:
+            #  解析前端发送的 JSON 数据
+            data = json.loads(request.body)
+            usermsg=data.get('content')
+            modeltype=data.get('modeltype')
+            modelname=data.get('modelname')
+            prompt= [{"role": "system", "content": "You are a helpful assistant"},
+                     {"role":"user","content":usermsg}]
+    # 返回流式响应
+            return StreamingHttpResponse(main.stream_llm_response(modeltype,modelname,prompt), content_type="text/plain")
+         except:
+             return JsonResponse({'error': 'Method not allowed'}, status=405)

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LLM Stream Example</title>
+</head>
+<body>
+    <h1>LLM Stream Response</h1>
+    <div id="response"></div>
+
+    <script>
+        const prompt = "Hello, how are you?";
+        const eventSource = new EventSource(`/llm-stream/?prompt=${encodeURIComponent(prompt)}`);
+
+        eventSource.onmessage = function(event) {
+            document.getElementById("response").innerHTML += event.data + "<br>";
+        };
+
+        eventSource.onerror = function(event) {
+            console.error("EventSource failed:", event);
+            eventSource.close();
+        };
+    </script>
+</body>
+</html>
