@@ -30,4 +30,5 @@ urlpatterns = [
     path('query-llm/',views.query),
     path('query-csrf/',views.get_csrf_token),
     path("llm-stream/", views.llm_stream_view, name="llm_stream"),
+    path('query-stream-llm/',views.query_stream),
 ]

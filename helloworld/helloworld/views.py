@@ -169,6 +169,52 @@ def query(request):
          except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
     return JsonResponse({'error': 'Method not allowed'}, status=405)
+@csrf_exempt
+def query_stream(request):
+    if request.method=='POST':
+         try:
+             # 解析前端发送的 JSON 数据
+            data = json.loads(request.body)
+            usermsg=data.get('content')
+            modeltype=data.get('modeltype')
+            modelname=data.get('modelname')
+            uuid=data.get('uuid')
+            tel=data.get('tel')
+            # 记录用户输入
+            Message.objects.create(
+                message_id=uuid,
+                content=usermsg,
+                phone_number=tel,
+                user_flag=True
+
+            )
+
+            
+            # msg=[
+            #     {"role": "system", "content": "You are a helpful assistant"},
+            #     {"role": "user", "content": 'who are you?'},
+            # ]
+            messages = Message.objects.filter(
+                message_id=uuid
+            ).order_by('timestamp')
+
+            message_list = [{"role": "system", "content": "You are a helpful assistant"}]
+            for message in messages:
+                message_list.append({
+                    'role': 'user' if message.user_flag else 'system',
+                    'content': message.content,
+                })
+             # 记录模型输出,由于是流式输出，等完整输出后更新content为空的行
+            Message.objects.create(
+                message_id=uuid,
+                # content=result,
+                phone_number=tel
+
+            )
+            return StreamingHttpResponse(main.stream_llm_response_record(modeltype,modelname,message_list,uuid), content_type="text/plain")
+         except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 @csrf_exempt 
 def llm_stream_view(request):
@@ -187,3 +233,5 @@ def llm_stream_view(request):
             return StreamingHttpResponse(main.stream_llm_response(modeltype,modelname,prompt), content_type="text/plain")
          except:
              return JsonResponse({'error': 'Method not allowed'}, status=405)
+         
+         

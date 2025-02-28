@@ -41,6 +41,7 @@
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+from custommodel.models import Message
 
 model_dict={'0':'ALIBABA','1':'DEEPSEEK'
 
@@ -101,7 +102,30 @@ def stream_llm_response(modeltype,modelname,usermsg):
         return '服务器无响应，请稍后再试！'
 
 
+def stream_llm_response_record(modeltype,modelname,usermsg,uuid):
+    try:
+        client=OpenAI(api_key=os.getenv(model_dict.get(modeltype)+'_APIKEY'),base_url=urls_dict.get(modeltype))
+        response = client.chat.completions.create(
+            model=modelname,
+            # prompt='who are you?',
+            max_tokens=200,
+            messages=usermsg,
+            stream=True
+        )
+        complete_output = ""
+        for chunk in response: 
+            # if "choices" in chunk:
+            if chunk.choices[0].delta.content:
+                complete_output+=chunk.choices[0].delta.content
+                # print(chunk.choices[0].delta.content)
+                yield chunk.choices[0].delta.content
+        
+        mes = Message.objects.filter(message_id=uuid,content='').first()
+        mes.content = complete_output 
+        mes.save()
 
+    except Exception as e:
+        return '服务器无响应，请稍后再试！'
 
     # # 调用LLM服务（以OpenAI API为例）
     # api_url =urls_dict.get(modeltype)
