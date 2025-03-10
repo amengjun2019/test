@@ -78,6 +78,7 @@ def llm_invoke(modeltype,modelname,usermsg):
         return '服务器无响应，请稍后再试！'
     
 import requests
+import sys
 
 def stream_llm_response(modeltype,modelname,usermsg):
     try:
@@ -85,7 +86,7 @@ def stream_llm_response(modeltype,modelname,usermsg):
         response = client.chat.completions.create(
             model=modelname,
             # prompt='who are you?',
-            max_tokens=200,
+            max_tokens=500,
             messages=usermsg,
             stream=True
         )
@@ -94,6 +95,8 @@ def stream_llm_response(modeltype,modelname,usermsg):
             if chunk.choices[0].delta.content:
                 print(chunk.choices[0].delta.content)
                 yield chunk.choices[0].delta.content
+                # sys.stdout.flush()  # 刷新缓冲区
+        # yield ""
         # for chunk in response.iter_content(chunk_size=None):
         #     if chunk:
         #         res=chunk.decode("utf-8")

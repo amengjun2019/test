@@ -10,7 +10,7 @@ from aliyuncode import alisendcode
 from llm_invoke import main
 import random,json
 from django.middleware.csrf import get_token
-from custommodel.models import Message,CustomUser,LoginRecord
+from custommodel.models import Message,CustomUser,LoginRecord,Msg_title
 import pytz 
 import datetime
 
@@ -101,9 +101,9 @@ def get_code(request):
             random.shuffle(digits)
             verify_code = ''.join(str(digit) for digit in digits[:4])
 
-    #         alisendcode.Sample.main([
-    #     tel,'阿里云短信测试','SMS_154950909','{"code":'+verify_code+'}'
-    # ])
+        #     alisendcode.Sample.main([
+        #     tel,'阿里云短信测试','SMS_154950909','{"code":'+verify_code+'}'
+        # ])
             print(verify_code)
 
         # 检查是否存在符合条件的记录
@@ -186,7 +186,6 @@ def query_stream(request):
                 content=usermsg,
                 phone_number=tel,
                 user_flag=True
-
             )
 
             
@@ -211,6 +210,8 @@ def query_stream(request):
                 phone_number=tel
 
             )
+            if not Msg_title.objects.filter(message_id=uuid).exists():
+                Msg_title.objects.create(phone_number=tel,message_id=uuid,title=usermsg[:50])
             return StreamingHttpResponse(main.stream_llm_response_record(modeltype,modelname,message_list,uuid), content_type="text/plain")
          except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
@@ -230,8 +231,34 @@ def llm_stream_view(request):
             prompt= [{"role": "system", "content": "You are a helpful assistant"},
                      {"role":"user","content":usermsg}]
     # 返回流式响应
-            return StreamingHttpResponse(main.stream_llm_response(modeltype,modelname,prompt), content_type="text/plain")
+            
+            respo=StreamingHttpResponse(main.stream_llm_response(modeltype,modelname,prompt), content_type="text/plain")
+            # respo['X-Accel-Buffering'] = 'no' 
+            return respo
          except:
              return JsonResponse({'error': 'Method not allowed'}, status=405)
          
-         
+def fetch_dialogues(request):
+    if request.method=='GET':
+        tel=request.GET.get('tel')
+        mess = Msg_title.objects.filter(
+                phone_number=tel
+            ).order_by('timestamp')
+        mes_ls=[]
+        for mes in mess:
+            mes_ls.append({'uuid':mes.message_id,'title':mes.title})
+        return JsonResponse({'result': mes_ls})
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+def fetch_dialogues_by_uuid(request):
+    if request.method=='GET':
+        message_id=request.GET.get('uuid')
+        mess = Message.objects.filter(
+                message_id=message_id
+            ).order_by('timestamp')
+        mes_ls=[]
+        for mes in mess:
+            mes_ls.append({ 'role': 'user' if mes.user_flag else 'system',
+                    'content': mes.content,'time':mes.timestamp})
+        return JsonResponse({'result': mes_ls})
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

@@ -29,6 +29,7 @@ ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = 'custommodel.CustomUser'
 # Application definition
+CORS_ALLOW_ALL_ORIGINS = True
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -37,10 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'custommodel',
+    'custommodel','corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # 必须放在最前
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -81,7 +83,9 @@ DATABASES = {
         'USER': 'root',      # 数据库用户名
         'PASSWORD': '123456',  # 数据库密码
         'HOST': '127.0.0.1',   # 数据库服务主机名（在docker-compose.yml中定义）
-        'PORT': '3306',        # 数据库端口
+        'PORT': '3308',        # 数据库端口
+        # 'HOST': 'mysqldb',   # 数据库服务主机名（在docker-compose.yml中定义）
+        # 'PORT': '3306',        # 数据库端口
     }
 }
 

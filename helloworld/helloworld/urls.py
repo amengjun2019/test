@@ -31,4 +31,6 @@ urlpatterns = [
     path('query-csrf/',views.get_csrf_token),
     path("llm-stream/", views.llm_stream_view, name="llm_stream"),
     path('query-stream-llm/',views.query_stream),
+    path('query-dialogues/',views.fetch_dialogues),
+    path('query-dialogue-by-uuid/',views.fetch_dialogues_by_uuid),
 ]

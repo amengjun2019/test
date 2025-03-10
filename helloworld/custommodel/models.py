@@ -25,10 +25,15 @@ class Message(models.Model):
     phone_number = models.CharField(max_length=15)
     timestamp = models.DateTimeField(auto_now_add=True)  # 自动记录创建时间
     user_flag=models.BooleanField(default=False)
+    # title=models.TextField(max_length=100,blank=True)
     # class Meta:
     #     ordering = ['-timestamp']  # 按时间倒序排列
 
-
+class Msg_title(models.Model):
+    message_id=models.TextField(max_length=100)
+    phone_number = models.CharField(max_length=15)
+    title=models.TextField(max_length=100)
+    timestamp = models.DateTimeField(auto_now_add=True)  # 自动记录创建时间
 
 
 class LoginRecord(models.Model):
